@@ -1,0 +1,56 @@
+# Essentially the same as 2017-12-18_Bird_Color_Band_Combinations.R by Travis Gallo
+# Made some small changes for our work
+# Will generate color combinations to use for field season (including silver band for each bird)
+
+install.packages("gtools")
+library(gtools) 
+
+# vector of avaliable colors
+# make sure to have "SI" for silver USGS band
+bands <- c("SI", "NB", "GR","BL","YE","WH","OR","RD")
+
+# create combinations
+n_bands <- 4 #number of bands that can go on a bird (two on each leg)
+combos <- permutations(length(bands), n_bands, bands, repeats.allowed=FALSE) # change to TRUE if you don't mind having BL/BL
+
+# keep only combos that include silver band
+SI_combos <- combos[rowSums(combos=="SI") == 1,]
+nrow(SI_combos) # how many combos have you made?
+colnames(SI_combos) <- c("Upper.Left","Lower.Left","Upper.Right","Lower.Right")
+write.csv(SI_combos, "original_color_band_combos.csv")
+
+# how many bands to order?
+total <- rep(0, length(bands))
+for (i in 1:length(bands)){
+    total[i] <- sum(SI_combos == bands[i])
+}
+to_order <- data.frame(color=bands, total=total)
+to_order
+
+
+# randomly draw a subset of combos (here 100)
+bands_subset <- as.data.frame(SI_combos[sample(nrow(SI_combos), 100, replace=FALSE),])
+write.csv(bands_subset, "subset_color_band_combos.csv")
+
+# how many bands to order?
+total_subset <- rep(0, length(bands))
+for (i in 1:length(bands)){
+    total_subset[i] <- sum(bands_subset == bands[i])
+}
+to_order_subset <- data.frame(color=bands, total=total_subset)
+to_order_subset
+
+######################
+### FOLLOWING YEAR ###
+######################
+# remove used combos from larger possible combo list 
+# logic supplied by David Winsemius at Heritage Laboratories - pulled this from online
+# create list of unique band combos used
+# load .csv of the combinations that were used exactly as they were before
+used_bands <- read.csv("yourfilepath/yourfilename.csv", header=TRUE)
+head(used_bands) # column names should match with below
+head(combos_w_AL) # column names should match with above
+
+# goes through and removes used combos from the larger list of combinations
+unused_combos <- combos_w_AL[apply(combos_w_AL, 1, function(x) max(apply(used_bands, 1, function(y) all.equal(x, y, check.attributes=FALSE)))) !="TRUE", ]
+nrow(unused_combos) # how many combos left (should be the original amount - the used combos)
